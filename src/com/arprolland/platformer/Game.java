@@ -1,7 +1,6 @@
 package com.arprolland.platformer;
 
 import java.awt.Canvas;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferStrategy;
@@ -10,8 +9,12 @@ import java.awt.image.DataBufferInt;
 
 import javax.swing.JFrame;
 
+import com.arprolland.platformer.entity.mob.Player;
 import com.arprolland.platformer.graphics.Screen;
 import com.arprolland.platformer.input.Keyboard;
+import com.arprolland.platformer.level.Level;
+import com.arprolland.platformer.level.RandomLevel;
+import com.arprolland.platformer.level.SpawnLevel;
 
 public class Game extends Canvas implements Runnable {
 	/**
@@ -35,6 +38,12 @@ public class Game extends Canvas implements Runnable {
 	//input
 	private Keyboard key;
 	
+	//level
+	private Level level;
+	
+	//player
+	private Player player;
+	
 	private BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 	private int[] pixels = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
 	
@@ -44,8 +53,10 @@ public class Game extends Canvas implements Runnable {
 		
 		screen = new Screen(width, height);
 		frame = new JFrame();
+		level = new SpawnLevel("res/textures/spawn.png");
 		
 		key = new Keyboard();
+		player = new Player(128, 128, key);
 		addKeyListener(key);
 	}
 	public synchronized void start() {
@@ -76,6 +87,8 @@ public class Game extends Canvas implements Runnable {
 		int frames = 0;
 		int updates = 0;
 		
+		requestFocus();
+		
 		while(isRunning) {
 			long now = System.nanoTime();
 			delta += (now-lastTime) / ns;
@@ -98,14 +111,10 @@ public class Game extends Canvas implements Runnable {
 		stop();
 	}
 	
-	int x, y = 0;
 	//tick rate 60Hz
 	public void tick() {
 		key.update();
-		if(key.up) y--;
-		if(key.down) y++;
-		if(key.left) x--;
-		if(key.right) x++;
+		player.update();
 	}
 	
 	//render images to Game object
@@ -119,8 +128,11 @@ public class Game extends Canvas implements Runnable {
 		}
 		
 		screen.clear();
+		int xScroll = player.x - screen.width/2;
+		int yScroll = player.y - screen.height/2;
+		level.render(xScroll, yScroll, screen);
+		player.render(screen);
 		
-		screen.render(x,y);
 		
 		for(int i = 0; i < pixels.length; i++) {
 			pixels[i] = screen.pixels[i];
